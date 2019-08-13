@@ -90,6 +90,18 @@
 #define BATT_SMBUS_CELL_2_VOLTAGE                       0x3E
 #define BATT_SMBUS_CELL_3_VOLTAGE                       0x3D
 #define BATT_SMBUS_CELL_4_VOLTAGE                       0x3C
+#define BATT_SMBUS_CELL_5_VOLTAGE                       0x3B
+#define BATT_SMBUS_CELL_6_VOLTAGE                       0x3A
+#define BATT_SMBUS_CELL_7_VOLTAGE                       0x39
+#define BATT_SMBUS_CELL_8_VOLTAGE                       0x38
+#define BATT_SMBUS_CELL_9_VOLTAGE                       0x37
+#define BATT_SMBUS_CELL_10_VOLTAGE                      0x36
+
+#define BATT_SMBUS_CELL_COUNT                           0x40            // < This is not a default register in the BQ40Z50 chip, but one that is really needed
+#define BATT_SMBUS_SAFETY_ALERT                         0x50            ///32 alert bits, threshold exceeded (used for burst current check)
+#define BATT_SMBUS_SAFETY_STATUS                        0x51            ///32 status bits, threshold exceeded for certain duration
+#define BATT_SMBUS_PF_ALERT                             0x52            ///32 permanent fail bits, issue warranting permanent shutoff occurred (used for cell voltage imbalance check)
+
 #define BATT_SMBUS_LIFETIME_FLUSH                       0x002E
 #define BATT_SMBUS_LIFETIME_BLOCK_ONE                   0x0060
 #define BATT_SMBUS_ENABLED_PROTECTIONS_A_ADDRESS        0x4938
@@ -97,6 +109,53 @@
 
 #define BATT_SMBUS_ENABLED_PROTECTIONS_A_DEFAULT        0xcf
 #define BATT_SMBUS_ENABLED_PROTECTIONS_A_CUV_DISABLED   0xce
+
+
+struct BATT_SMBUS_Safety_Status
+{
+	uint8_t len = 4;
+	union
+	{
+		struct
+		{
+			uint8_t _rsvd_31:1;
+			uint8_t _rsvd_30:1;
+			uint8_t FLAG_DISCHARGE_OVERCURRENT:1;
+			uint8_t FLAG_CELL_OVERVOLTAGE_LATCH:1;
+			uint8_t FLAG_DISCHARGE_UNDERTEMP:1;
+			uint8_t FLAG_CHARGE_UNDERTEMP:1;
+			uint8_t FLAG_OVERPRECHARGE_CURRENT:1;
+			uint8_t FLAG_OVERCHARGE_VOLTAGE:1;
+			uint8_t FLAG_OVERCHARGE_CURRENT:1;
+			uint8_t FLAG_OVERCHARGE:1;
+			uint8_t _rsvd_21:1;
+			uint8_t FLAG_CHARGE_TIMEOUT:1;
+			uint8_t _rsvd_19:1;
+			uint8_t FLAG_PRECHARGE_TIMEOUT:1;
+			uint8_t _rsvd_17:1;
+			uint8_t FLAG_FET_OVERTEMP:1;
+			uint8_t _rsvd_15:1;
+			uint8_t FLAG_CELL_UNDERVOLTAGE_COMPENSATED:1;
+			uint8_t FLAG_DISCHARGE_OVERTEMP:1;
+			uint8_t FLAG_CHARGE_OVERTEMP:1;
+			uint8_t FLAG_DISHCARGE_LATCH_SHORT_CIRCUIT:1;
+			uint8_t FLAG_DISCHARGE_SHORT_CIRCUIT:1;
+			uint8_t FLAG_CHARGE_LATCH_SHORT_CIRCUIT:1;
+			uint8_t FLAG_CHARGE_SHORT_CIRCUIT:1;
+			uint8_t FLAG_DISCHARGE_LATCH_OVERLOAD:1;
+			uint8_t FLAG_DISCHARGE_OVERLOAD:1;
+			uint8_t FLAG_DISCHARGE_OVERCURRENT_2:1;
+			uint8_t FLAG_DISCHARGE_OVERCURRENT_1:1;
+			uint8_t FLAG_CHARGE_OVERCURRENT_2:1;
+			uint8_t FLAG_CHARGE_OVERCURRENT_1:1;
+			uint8_t FLAG_CELL_OVERVOLTAGE:1;
+			uint8_t FLAG_CELL_UNDERVOLTAGE:1;
+		}flags;
+		uint32_t data;
+	}flag;
+	uint8_t crc;
+};
+
 
 #define NUM_BUS_OPTIONS (sizeof(bus_options)/sizeof(bus_options[0]))
 
