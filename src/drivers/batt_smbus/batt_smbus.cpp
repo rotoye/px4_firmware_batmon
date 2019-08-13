@@ -72,7 +72,9 @@ BATT_SMBUS::BATT_SMBUS(SMBus *interface, const char *path) :
 	// unseal() here to allow an external config script to write to protected flash.
 	// This is neccessary to avoid bus errors due to using standard i2c mode instead of SMbus mode.
 	// The external config script should then seal() the device.
-	unseal();
+
+	//HACKED
+	//unseal();
 }
 
 BATT_SMBUS::~BATT_SMBUS()
@@ -189,36 +191,41 @@ void BATT_SMBUS::Run()
 	new_report.current_filtered_a = new_report.current_a;
 
 	// Read average current.
-	ret |= _interface->read_word(BATT_SMBUS_AVERAGE_CURRENT, &result);
 
-	float average_current = (-1.0f * ((float)(*(int16_t *)&result)) / 1000.0f);
+	//HACKED:
+	//ret |= _interface->read_word(BATT_SMBUS_AVERAGE_CURRENT, &result);
 
-	new_report.average_current_a = average_current;
+	//float average_current = (-1.0f * ((float)(*(int16_t *)&result)) / 1000.0f);
 
+	//HACKED:
+	//new_report.average_current_a = average_current;
 	// If current is high, turn under voltage protection off. This is neccessary to prevent
 	// a battery from cutting off while flying with high current near the end of the packs capacity.
-	set_undervoltage_protection(average_current);
+	//set_undervoltage_protection(average_current);
 
 	// Read run time to empty.
-	ret |= _interface->read_word(BATT_SMBUS_RUN_TIME_TO_EMPTY, &result);
-	new_report.run_time_to_empty = result;
+	//ret |= _interface->read_word(BATT_SMBUS_RUN_TIME_TO_EMPTY, &result);
+	//new_report.run_time_to_empty = result;
 
 	// Read average time to empty.
-	ret |= _interface->read_word(BATT_SMBUS_AVERAGE_TIME_TO_EMPTY, &result);
-	new_report.average_time_to_empty = result;
+
+	//HACKED:
+	//ret |= _interface->read_word(BATT_SMBUS_AVERAGE_TIME_TO_EMPTY, &result);
+	//new_report.average_time_to_empty = result;
 
 	// Read remaining capacity.
 	ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
 
-	// Calculate remaining capacity percent with complementary filter.
+	//Calculate remaining capacity percent with complementary filter.
 	new_report.remaining = 0.8f * _last_report.remaining + 0.2f * (1.0f - (float)((float)(_batt_capacity - result) /
 			       (float)_batt_capacity));
 
 	// Calculate total discharged amount.
 	new_report.discharged_mah = _batt_startup_capacity - result;
 
+	//HACKED:
 	// Check if max lifetime voltage delta is greater than allowed.
-	if (_lifetime_max_delta_cell_voltage > BATT_CELL_VOLTAGE_THRESHOLD_FAILED) {
+	/*if (_lifetime_max_delta_cell_voltage > BATT_CELL_VOLTAGE_THRESHOLD_FAILED) {
 		new_report.warning = battery_status_s::BATTERY_WARNING_CRITICAL;
 	}
 
@@ -236,7 +243,7 @@ void BATT_SMBUS::Run()
 		} else {
 			new_report.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;
 		}
-	}
+	}*/
 
 	// Read battery temperature and covert to Celsius.
 	ret |= _interface->read_word(BATT_SMBUS_TEMP, &result);
@@ -423,7 +430,7 @@ int BATT_SMBUS::get_startup_info()
 	uint16_t full_cap = tmp;
     
     uint8_t cell_count;
-    result |= _interface->block_read(BATT_SMBUS_CELL_COUNT, &cell_count, 1, true);
+    result |= _interface->block_read(BATT_SMBUS_CELL_COUNT, &cell_count, 1, false);
 	
     if (!result) {
 		_serial_number = serial_num;
@@ -432,7 +439,7 @@ int BATT_SMBUS::get_startup_info()
 		_batt_capacity = full_cap;
 		_cell_count = cell_count;
 	}
-
+/*	TODO : Done this to prevent the crash of batmon . Batmon doesn't handle lifetime_read_block_one
 	if (lifetime_data_flush() == PX4_OK) {
 		// Flush needs time to complete, otherwise device is busy. 100ms not enough, 200ms works.
 		px4_usleep(200000);
@@ -447,7 +454,7 @@ int BATT_SMBUS::get_startup_info()
 	} else {
 		PX4_WARN("Failed to flush lifetime data");
 	}
-
+*/
 	// Read battery threshold params on startup.
 	param_get(param_find("BAT_CRIT_THR"), &_crit_thr);
 	param_get(param_find("BAT_LOW_THR"), &_low_thr);
