@@ -286,9 +286,10 @@ int BATT_SMBUS::get_cell_voltages()
 {
 	// Temporary variable for storing SMBUS reads.
 	uint16_t result = 0;
+	uint8_t ret = 0;
 
     // Making the assumption that the register value of BATT_SMBUS_CELL_1_VOLTAGE and BATT_SMBUS_CELL_10_VOLTAGE are sequential and decreasing order.
-    for (int i = 0 ; i< cellCount;i++)
+    for (int i = 0 ; i< _cell_count;i++)
     {
         ret |= _interface->read_word(BATT_SMBUS_CELL_1_VOLTAGE - i, &result);
         // Convert millivolts to volts.
@@ -422,14 +423,14 @@ int BATT_SMBUS::get_startup_info()
 	uint16_t full_cap = tmp;
     
     uint8_t cell_count;
-    result |= _interface->block_read(code, cell_count, 1, true);
+    result |= _interface->block_read(BATT_SMBUS_CELL_COUNT, &cell_count, 1, true);
 	
     if (!result) {
 		_serial_number = serial_num;
 		_batt_startup_capacity = remaining_cap;
 		_cycle_count = cycle_count;
 		_batt_capacity = full_cap;
-		_cellCount = cell_count;
+		_cell_count = cell_count;
 	}
 
 	if (lifetime_data_flush() == PX4_OK) {
