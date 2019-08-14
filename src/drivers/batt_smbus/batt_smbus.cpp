@@ -73,10 +73,11 @@ BATT_SMBUS::BATT_SMBUS(SMBus *interface, const char *path) :
 	// This is neccessary to avoid bus errors due to using standard i2c mode instead of SMbus mode.
 	// The external config script should then seal() the device.
 
-	//HACKED
-	//unseal();
-}
+	if (_smart_battery_type == SMART_BATTERY_BQ40Zx50) {
+		unseal();
+	}
 
+}
 BATT_SMBUS::~BATT_SMBUS()
 {
 	orb_unadvertise(_batt_topic);
@@ -190,61 +191,61 @@ void BATT_SMBUS::Run()
 	new_report.current_a = (-1.0f * ((float)(*(int16_t *)&result)) / 1000.0f);
 	new_report.current_filtered_a = new_report.current_a;
 
-	// Read average current.
+	// Hacked to get Batmon working. Some of the details aren't sent by batmon yet
+	if (_smart_battery_type == SMART_BATTERY_BQ40Zx50)
+	{
+		// Read average current.
+		ret |= _interface->read_word(BATT_SMBUS_AVERAGE_CURRENT, &result);
 
-	//HACKED:
-	//ret |= _interface->read_word(BATT_SMBUS_AVERAGE_CURRENT, &result);
+		float average_current = (-1.0f * ((float)(*(int16_t *)&result)) / 1000.0f);
 
-	//float average_current = (-1.0f * ((float)(*(int16_t *)&result)) / 1000.0f);
+		new_report.average_current_a = average_current;
+		// If current is high, turn under voltage protection off. This is neccessary to prevent
+		// a battery from cutting off while flying with high current near the end of the packs capacity.
+		set_undervoltage_protection(average_current);
 
-	//HACKED:
-	//new_report.average_current_a = average_current;
-	// If current is high, turn under voltage protection off. This is neccessary to prevent
-	// a battery from cutting off while flying with high current near the end of the packs capacity.
-	//set_undervoltage_protection(average_current);
+		// Read run time to empty.
+		ret |= _interface->read_word(BATT_SMBUS_RUN_TIME_TO_EMPTY, &result);
+		new_report.run_time_to_empty = result;
 
-	// Read run time to empty.
-	//ret |= _interface->read_word(BATT_SMBUS_RUN_TIME_TO_EMPTY, &result);
-	//new_report.run_time_to_empty = result;
+		// Read average time to empty.
 
-	// Read average time to empty.
+		//HACKED:
+		ret |= _interface->read_word(BATT_SMBUS_AVERAGE_TIME_TO_EMPTY, &result);
+		new_report.average_time_to_empty = result;
 
-	//HACKED:
-	//ret |= _interface->read_word(BATT_SMBUS_AVERAGE_TIME_TO_EMPTY, &result);
-	//new_report.average_time_to_empty = result;
+		// Check if max lifetime voltage delta is greater than allowed.
+		if (_lifetime_max_delta_cell_voltage > BATT_CELL_VOLTAGE_THRESHOLD_FAILED) {
+			new_report.warning = battery_status_s::BATTERY_WARNING_CRITICAL;
+		}
+
+		// Propagate warning state.
+		else {
+			if (new_report.remaining > _low_thr) {
+				new_report.warning = battery_status_s::BATTERY_WARNING_NONE;
+
+			} else if (new_report.remaining > _crit_thr) {
+				new_report.warning = battery_status_s::BATTERY_WARNING_LOW;
+
+			} else if (new_report.remaining > _emergency_thr) {
+				new_report.warning = battery_status_s::BATTERY_WARNING_CRITICAL;
+
+			} else {
+				new_report.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;
+			}
+		}
+	}
 
 	// Read remaining capacity.
 	ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
 
 	//Calculate remaining capacity percent with complementary filter.
+	//TODO: do we want to trust this?
 	new_report.remaining = 0.8f * _last_report.remaining + 0.2f * (1.0f - (float)((float)(_batt_capacity - result) /
 			       (float)_batt_capacity));
 
 	// Calculate total discharged amount.
 	new_report.discharged_mah = _batt_startup_capacity - result;
-
-	//HACKED:
-	// Check if max lifetime voltage delta is greater than allowed.
-	/*if (_lifetime_max_delta_cell_voltage > BATT_CELL_VOLTAGE_THRESHOLD_FAILED) {
-		new_report.warning = battery_status_s::BATTERY_WARNING_CRITICAL;
-	}
-
-	// Propagate warning state.
-	else {
-		if (new_report.remaining > _low_thr) {
-			new_report.warning = battery_status_s::BATTERY_WARNING_NONE;
-
-		} else if (new_report.remaining > _crit_thr) {
-			new_report.warning = battery_status_s::BATTERY_WARNING_LOW;
-
-		} else if (new_report.remaining > _emergency_thr) {
-			new_report.warning = battery_status_s::BATTERY_WARNING_CRITICAL;
-
-		} else {
-			new_report.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;
-		}
-	}*/
-
 	// Read battery temperature and covert to Celsius.
 	ret |= _interface->read_word(BATT_SMBUS_TEMP, &result);
 	new_report.temperature = ((float)result / 10.0f) + CONSTANTS_ABSOLUTE_NULL_CELSIUS;
@@ -253,10 +254,10 @@ void BATT_SMBUS::Run()
 	new_report.cycle_count = _cycle_count;
 	new_report.serial_number = _serial_number;
 	new_report.cell_count = _cell_count;
-	new_report.voltage_cell_v[0] = _cell_voltages[0];
-	new_report.voltage_cell_v[1] = _cell_voltages[1];
-	new_report.voltage_cell_v[2] = _cell_voltages[2];
-	new_report.voltage_cell_v[3] = _cell_voltages[3];
+	for (uint8_t i = 0; i< _cell_count; i++)
+	{
+		new_report.voltage_cell_v[i] = _cell_voltages[i];
+	}
 
 	// Only publish if no errors.
 	if (!ret) {
@@ -412,6 +413,10 @@ int BATT_SMBUS::get_startup_info()
 		}
 
 		_manufacturer_name = new char[sizeof(man_name)];
+
+		if (std::strcmp(man_name, "RotoYe") == 0) {
+			_smart_battery_type = SMART_BATTERY_ROTOYE_BATMON;
+		}
 	}
 
 	// Temporary variable for storing SMBUS reads.

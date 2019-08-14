@@ -102,6 +102,8 @@
 #define BATT_SMBUS_SAFETY_STATUS                        0x51            ///32 status bits, threshold exceeded for certain duration
 #define BATT_SMBUS_PF_ALERT                             0x52            ///32 permanent fail bits, issue warranting permanent shutoff occurred (used for cell voltage imbalance check)
 
+#define SMART_BATTERY_ROTOYE_BATMON 1
+#define SMART_BATTERY_BQ40Zx50 2
 #define BATT_SMBUS_LIFETIME_FLUSH                       0x002E
 #define BATT_SMBUS_LIFETIME_BLOCK_ONE                   0x0060
 #define BATT_SMBUS_ENABLED_PROTECTIONS_A_ADDRESS        0x4938
@@ -344,7 +346,7 @@ private:
 
 	perf_counter_t _cycle;
 
-	float _cell_voltages[4] = {};
+	float _cell_voltages[MAX_CELL_COUNT] = {};
 
 	float _max_cell_voltage_delta{0};
 
@@ -385,6 +387,7 @@ private:
 	/** @param _manufacturer_name Name of the battery manufacturer. */
 	char *_manufacturer_name;
 
+	uint8_t _smart_battery_type;
 	/** @param _lifetime_max_delta_cell_voltage Max lifetime delta of the battery cells */
 	float _lifetime_max_delta_cell_voltage;
 
