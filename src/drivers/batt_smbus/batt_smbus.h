@@ -55,7 +55,8 @@
 #include "board_config.h"
 
 #define DATA_BUFFER_SIZE                                32
-
+#define MAX_CELL_COUNT					10		///< Number of cells to be allocated space for
+#define DEFAULT_INITIALIZED_CELL_COUNT			4		///< This is the default assumption on the number of cells
 #define BATT_CELL_VOLTAGE_THRESHOLD_RTL                 0.5f            ///< Threshold in volts to RTL if cells are imbalanced
 #define BATT_CELL_VOLTAGE_THRESHOLD_FAILED              1.5f            ///< Threshold in volts to Land if cells are imbalanced
 

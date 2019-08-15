@@ -50,7 +50,7 @@ BATT_SMBUS::BATT_SMBUS(SMBus *interface, const char *path) :
 	_interface(interface),
 	_cycle(perf_alloc(PC_ELAPSED, "batt_smbus_cycle")),
 	_batt_topic(nullptr),
-	_cell_count(4),
+	_cell_count(DEFAULT_INITIALIZED_CELL_COUNT),
 	_batt_capacity(0),
 	_batt_startup_capacity(0),
 	_cycle_count(0),
@@ -234,6 +234,11 @@ void BATT_SMBUS::Run()
 				new_report.warning = battery_status_s::BATTERY_WARNING_EMERGENCY;
 			}
 		}
+		new_report.is_smart = true;
+	}
+	else if (_smart_battery_type == SMART_BATTERY_ROTOYE_BATMON)
+	{
+		new_report.is_smart = true;
 	}
 
 	// Read remaining capacity.

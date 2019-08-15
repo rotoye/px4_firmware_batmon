@@ -711,7 +711,12 @@ protected:
 
 				for (int cell = 0; cell < mavlink_cells_max; cell++) {
 					if ((battery_status.cell_count > 0) && (cell < battery_status.cell_count) && battery_status.connected) {
-						bat_msg.voltages[cell] = (battery_status.voltage_v / battery_status.cell_count) * 1000.0f;
+						if(battery_status.is_smart)
+						{
+							bat_msg.voltages[cell] = battery_status.voltage_cell_v[cell]*1000;
+						}
+						else
+							bat_msg.voltages[cell] = (battery_status.voltage_v / battery_status.cell_count) * 1000.0f;
 
 					} else {
 						bat_msg.voltages[cell] = UINT16_MAX;
