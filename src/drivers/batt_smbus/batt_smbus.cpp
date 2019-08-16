@@ -419,7 +419,7 @@ int BATT_SMBUS::get_startup_info()
 
 		_manufacturer_name = new char[sizeof(man_name)];
 
-		if (std::strcmp(man_name, "RotoYe") == 0) {
+		if (std::strcmp(man_name, "Rotoye") == 0) {
 			_smart_battery_type = SMART_BATTERY_ROTOYE_BATMON;
 		}
 	}
