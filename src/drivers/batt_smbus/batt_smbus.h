@@ -362,12 +362,14 @@ private:
 	orb_advert_t _batt_topic;
 
 	/** @param _cell_count Number of series cell. */
-	uint8_t _cell_count;
+	uint16_t _cell_count;
 
 	/** @param _batt_capacity Battery design capacity in mAh (0 means unknown). */
 	uint16_t _batt_capacity;
 
-	/** @param _batt_startup_capacity Battery remaining capacity in mAh on startup. */
+	/** @param _batt_startup_capacity Battery remaining capacity in mAh on startup. This is a little confusing
+	 * 				  If there is a smart battery, we dont need to really track this.
+	 */
 	uint16_t _batt_startup_capacity;
 
 	/** @param _cycle_count The number of cycles the battery has experienced. */

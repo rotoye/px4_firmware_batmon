@@ -239,18 +239,25 @@ void BATT_SMBUS::Run()
 	else if (_smart_battery_type == SMART_BATTERY_ROTOYE_BATMON)
 	{
 		new_report.is_smart = true;
+		// Read remaining capacity.
+		ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
+		new_report.remaining = result;
+	}
+	else
+	{
+		// Calculate total discharged amount.
+		new_report.discharged_mah = _batt_startup_capacity - result;
+		// Read remaining capacity.
+		ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
+
+		//Calculate remaining capacity percent with complementary filter.
+		//TODO: do we want to trust this?
+		new_report.remaining = 0.8f * _last_report.remaining + 0.2f * (1.0f - (float)((float)(_batt_capacity - result) /
+				(float)_batt_capacity));
 	}
 
-	// Read remaining capacity.
-	ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
 
-	//Calculate remaining capacity percent with complementary filter.
-	//TODO: do we want to trust this?
-	new_report.remaining = 0.8f * _last_report.remaining + 0.2f * (1.0f - (float)((float)(_batt_capacity - result) /
-			       (float)_batt_capacity));
 
-	// Calculate total discharged amount.
-	new_report.discharged_mah = _batt_startup_capacity - result;
 	// Read battery temperature and covert to Celsius.
 	ret |= _interface->read_word(BATT_SMBUS_TEMP, &result);
 	new_report.temperature = ((float)result / 10.0f) + CONSTANTS_ABSOLUTE_NULL_CELSIUS;
@@ -422,6 +429,7 @@ int BATT_SMBUS::get_startup_info()
 		if (std::strcmp(man_name, "Rotoye") == 0) {
 			_smart_battery_type = SMART_BATTERY_ROTOYE_BATMON;
 		}
+		PX4_INFO("The manufacturer name: %s", man_name);
 	}
 
 	// Temporary variable for storing SMBUS reads.
@@ -429,18 +437,23 @@ int BATT_SMBUS::get_startup_info()
 
 	result = _interface->read_word(BATT_SMBUS_SERIAL_NUMBER, &tmp);
 	uint16_t serial_num = tmp;
+	PX4_INFO("BATT_SMBUS_SERIAL_NUMBER , result: %d %d", tmp, result);
 
 	result |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &tmp);
 	uint16_t remaining_cap = tmp;
+	PX4_INFO("BATT_SMBUS_REMAINING_CAPACITY, result: %d %d", tmp, result);
 
 	result |= _interface->read_word(BATT_SMBUS_CYCLE_COUNT, &tmp);
 	uint16_t cycle_count = tmp;
+	PX4_INFO("BATT_SMBUS_CYCLE_COUNT, result: %d %d", tmp, result);
 
 	result |= _interface->read_word(BATT_SMBUS_FULL_CHARGE_CAPACITY, &tmp);
 	uint16_t full_cap = tmp;
+	PX4_INFO("BATT_SMBUS_FULL_CHARGE_CAPACITY, result: %d %d", tmp, result);
     
-    uint8_t cell_count;
-    result |= _interface->block_read(BATT_SMBUS_CELL_COUNT, &cell_count, 1, false);
+	uint16_t cell_count;
+	result |= _interface->read_word(BATT_SMBUS_CELL_COUNT, &cell_count);
+	PX4_INFO("BATT_SMBUS_CELL_COUNT, result: %d %d", cell_count, result);
 	
     if (!result) {
 		_serial_number = serial_num;
@@ -449,10 +462,12 @@ int BATT_SMBUS::get_startup_info()
 		_batt_capacity = full_cap;
 		_cell_count = cell_count;
 	}
-/*	TODO : Done this to prevent the crash of batmon . Batmon doesn't handle lifetime_read_block_one
-	if (lifetime_data_flush() == PX4_OK) {
-		// Flush needs time to complete, otherwise device is busy. 100ms not enough, 200ms works.
-		px4_usleep(200000);
+
+	//TODO : Done this to prevent the crash of batmon . Batmon doesn't handle lifetime_read_block_one
+	if (_smart_battery_type == SMART_BATTERY_BQ40Zx50) {
+		if (lifetime_data_flush() == PX4_OK) {
+			// Flush needs time to complete, otherwise device is busy. 100ms not enough, 200ms works.
+			px4_usleep(200000);
 
 		if (lifetime_read_block_one() == PX4_OK) {
 			if (_lifetime_max_delta_cell_voltage > BATT_CELL_VOLTAGE_THRESHOLD_FAILED) {
@@ -464,7 +479,7 @@ int BATT_SMBUS::get_startup_info()
 	} else {
 		PX4_WARN("Failed to flush lifetime data");
 	}
-*/
+	}
 	// Read battery threshold params on startup.
 	param_get(param_find("BAT_CRIT_THR"), &_crit_thr);
 	param_get(param_find("BAT_LOW_THR"), &_low_thr);
