@@ -240,8 +240,8 @@ void BATT_SMBUS::Run()
 	{
 		new_report.is_smart = true;
 		// Read remaining capacity.
-		ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
-		new_report.remaining = result;
+		ret |= _interface->read_word(BATT_SMBUS_SOC, &result);
+		new_report.remaining = (float)result/100;
 	}
 	else
 	{
