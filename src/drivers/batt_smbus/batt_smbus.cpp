@@ -240,13 +240,15 @@ void BATT_SMBUS::Run()
 	{
 		new_report.is_smart = true;
 		// Read remaining capacity.
-		ret |= _interface->read_word(BATT_SMBUS_SOC, &result);
+		ret |= _interface->read_word(BATT_SMBUS_RELATIVE_SOC, &result);
 		new_report.remaining = (float)result/100;
+
+		// Read remaining capacity.
+		ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
+		new_report.discharged_mah = _batt_startup_capacity - result;
 	}
 	else
 	{
-		// Calculate total discharged amount.
-		new_report.discharged_mah = _batt_startup_capacity - result;
 		// Read remaining capacity.
 		ret |= _interface->read_word(BATT_SMBUS_REMAINING_CAPACITY, &result);
 
@@ -254,6 +256,8 @@ void BATT_SMBUS::Run()
 		//TODO: do we want to trust this?
 		new_report.remaining = 0.8f * _last_report.remaining + 0.2f * (1.0f - (float)((float)(_batt_capacity - result) /
 				(float)_batt_capacity));
+		// Calculate total discharged amount.
+		new_report.discharged_mah = _batt_startup_capacity - result;
 	}
 
 

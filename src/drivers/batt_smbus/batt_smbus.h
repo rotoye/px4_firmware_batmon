@@ -74,8 +74,8 @@
 #define BATT_SMBUS_FULL_CHARGE_CAPACITY                 0x10            ///< capacity when fully charged
 #define BATT_SMBUS_RUN_TIME_TO_EMPTY                    0x11            ///< predicted remaining battery capacity based on the present rate of discharge in min
 #define BATT_SMBUS_AVERAGE_TIME_TO_EMPTY                0x12            ///< predicted remaining battery capacity based on the present rate of discharge in min
-#define BATT_SMBUS_REMAINING_CAPACITY                   0x0F            ///< predicted remaining battery capacity as a percentage
-#define BATT_SMBUS_SOC 					0x0D
+#define BATT_SMBUS_REMAINING_CAPACITY                   0x0F            ///< predicted remaining battery capacity as mAh
+#define BATT_SMBUS_RELATIVE_SOC				0x0D		///< predicted remaining battery capacity as a percentage
 #define BATT_SMBUS_CYCLE_COUNT                          0x17            ///< number of cycles the battery has experienced
 #define BATT_SMBUS_DESIGN_CAPACITY                      0x18            ///< design capacity register
 #define BATT_SMBUS_DESIGN_VOLTAGE                       0x19            ///< design voltage register
